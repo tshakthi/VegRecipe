@@ -1,171 +1,155 @@
-// scripts.js — data + render logic for RecipeVeg (vegetarian-only view)
+let isTamil = false;
+let editIndex = null;
 
-// Sample data (mix includes a non-veg item to demonstrate filtering; only veg recipes will be shown)
-const RECIPES = [
+const recipes = JSON.parse(localStorage.getItem("recipes")) || [
   {
-    id: 1,
-    title: "Paneer Butter Masala",
-    image: "https://images.unsplash.com/photo-1604908177522-0b7c7d54188a?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
-    description: "Creamy tomato-based curry with soft paneer cubes.",
-    tags: ["North Indian", "Main"],
-    isVegetarian: true,
-    benefits: [
-      "Paneer is a good source of protein and calcium.",
-      "Tomatoes provide vitamin C and antioxidants.",
-      "Balanced fats and protein help satiety."
-    ]
-  },
-  {
-    id: 2,
-    title: "Vegetable Biryani",
-    image: "https://images.unsplash.com/photo-1604908177523-324c8c2b9cc9?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
-    description: "Aromatic rice layered with seasonal vegetables and spices.",
-    tags: ["Rice", "Festive"],
-    isVegetarian: true,
-    benefits: [
-      "Vegetables increase fiber and micronutrient intake.",
-      "Spices like turmeric have anti-inflammatory properties.",
-      "Rice provides sustained energy from complex carbs."
-    ]
-  },
-  {
-    id: 3,
-    title: "Masoor Dal (Red Lentil Curry)",
-    image: "https://images.unsplash.com/photo-1589308078053-9b2b2f69d6f7?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
-    description: "Simple and nutritious red lentil curry.",
-    tags: ["Protein-rich", "Comfort Food"],
-    isVegetarian: true,
-    benefits: [
-      "Lentils are high in plant-based protein and fiber.",
-      "Supports stable blood sugar levels.",
-      "Rich in folate, iron, and potassium."
-    ]
-  },
-  {
-    id: 4,
-    title: "Chicken Curry (example non-veg)",
-    image: "https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
-    description: "Traditional chicken curry.",
-    tags: ["Non-veg"],
-    isVegetarian: false,
-    benefits: [
-      "High in animal protein."
-    ]
+    nameEn: "Sambar",
+    nameTa: "சாம்பார்",
+    image: "https://www.indianhealthyrecipes.com/wp-content/uploads/2019/05/sambar-recipe.jpg",
+    ingredientsEn: ["Toor dal", "Tamarind", "Vegetables", "Sambar powder"],
+    ingredientsTa: ["துவரம் பருப்பு", "புளி", "காய்கறிகள்", "சாம்பார் பொடி"],
+    instructionsEn: "Cook dal and vegetables with tamarind water and sambar powder.",
+    instructionsTa: "துவரம் பருப்பு, காய்கறிகள், புளிநீர் மற்றும் சாம்பார் பொடி சேர்த்து வேகவைக்கவும்."
   }
 ];
 
-// DOM elements
-const recipesEl = document.getElementById('recipes');
-const searchEl = document.getElementById('search');
-const tagFilterEl = document.getElementById('tagFilter');
+const container = document.getElementById("recipeContainer");
+const modal = document.getElementById("recipeModal");
+const closeBtn = document.querySelector(".close");
+const formModal = document.getElementById("formModal");
+const closeFormBtn = document.querySelector(".close-form");
 
-const modalEl = document.getElementById('modal');
-const modalTitle = document.getElementById('modalTitle');
-const modalList = document.getElementById('modalList');
-const modalClose = document.getElementById('modalClose');
-
-function init() {
-  populateTagFilter();
-  renderRecipes();
-
-  searchEl.addEventListener('input', renderRecipes);
-  tagFilterEl.addEventListener('change', renderRecipes);
-  modalClose.addEventListener('click', closeModal);
-  modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-}
-
-function populateTagFilter() {
-  // extract tags from vegetarian recipes only
-  const tags = new Set();
-  RECIPES.filter(r => r.isVegetarian).forEach(r => r.tags.forEach(t => tags.add(t)));
-  Array.from(tags).sort().forEach(tag => {
-    const opt = document.createElement('option');
-    opt.value = tag;
-    opt.textContent = tag;
-    tagFilterEl.appendChild(opt);
+// Display recipes
+function displayRecipes() {
+  container.innerHTML = "";
+  recipes.forEach((recipe, index) => {
+    const card = document.createElement("div");
+    card.classList.add("recipe-card");
+    card.innerHTML = `
+      <img src="${recipe.image}" alt="${recipe.nameEn}">
+      <h3>${isTamil ? recipe.nameTa : recipe.nameEn}</h3>
+      <div class="actions">
+        <button onclick="editRecipe(${index})">Edit</button>
+        <button onclick="deleteRecipe(${index})">Delete</button>
+      </div>
+    `;
+    card.onclick = (e) => {
+      if (!e.target.matches("button")) showRecipe(recipe);
+    };
+    container.appendChild(card);
   });
 }
+displayRecipes();
 
-function renderRecipes() {
-  const query = searchEl.value.trim().toLowerCase();
-  const tag = tagFilterEl.value;
+// Search
+document.getElementById("searchInput").addEventListener("input", function() {
+  const query = this.value.toLowerCase();
+  const filtered = recipes.filter(r =>
+    (isTamil ? r.nameTa : r.nameEn).toLowerCase().includes(query)
+  );
+  container.innerHTML = "";
+  filtered.forEach(r => {
+    const card = document.createElement("div");
+    card.classList.add("recipe-card");
+    card.innerHTML = `<img src="${r.image}" alt="${r.nameEn}"><h3>${isTamil ? r.nameTa : r.nameEn}</h3>`;
+    card.onclick = () => showRecipe(r);
+    container.appendChild(card);
+  });
+});
 
-  // filter: only vegetarian recipes
-  const filtered = RECIPES.filter(r => r.isVegetarian)
-    .filter(r => (!query || r.title.toLowerCase().includes(query) || (r.description && r.description.toLowerCase().includes(query))))
-    .filter(r => (!tag || r.tags.includes(tag)));
+// Show Recipe
+function showRecipe(recipe) {
+  modal.style.display = "block";
+  document.getElementById("recipeTitle").textContent = isTamil ? recipe.nameTa : recipe.nameEn;
+  document.getElementById("recipeImage").src = recipe.image;
 
-  recipesEl.innerHTML = '';
+  const ingredientsList = document.getElementById("recipeIngredients");
+  ingredientsList.innerHTML = "";
+  (isTamil ? recipe.ingredientsTa : recipe.ingredientsEn).forEach(i => {
+    const li = document.createElement("li");
+    li.textContent = i;
+    ingredientsList.appendChild(li);
+  });
 
-  if (filtered.length === 0) {
-    recipesEl.innerHTML = '<p>No vegetarian recipes found.</p>';
+  document.getElementById("recipeInstructions").textContent = isTamil ? recipe.instructionsTa : recipe.instructionsEn;
+}
+
+closeBtn.onclick = () => modal.style.display = "none";
+window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
+
+// Language Toggle
+document.getElementById("langToggle").onclick = () => {
+  isTamil = !isTamil;
+  document.getElementById("title").textContent = isTamil ? "🌿 தமிழ் சைவ சமையல்" : "🌿 Tamil Nadu Veg Recipes";
+  document.getElementById("searchInput").placeholder = isTamil ? "சமையல் தேட..." : "Search recipes...";
+  document.getElementById("ingredientTitle").textContent = isTamil ? "பொருட்கள்:" : "Ingredients:";
+  document.getElementById("instructionTitle").textContent = isTamil ? "செய்முறை:" : "Instructions:";
+  document.getElementById("langToggle").textContent = isTamil ? "English" : "தமிழ்";
+  displayRecipes();
+};
+
+// Add Recipe Modal
+document.getElementById("addRecipeBtn").onclick = () => {
+  editIndex = null;
+  document.getElementById("formTitle").textContent = "Add Recipe";
+  formModal.style.display = "block";
+};
+
+closeFormBtn.onclick = () => formModal.style.display = "none";
+
+document.getElementById("saveRecipeBtn").onclick = () => {
+  const name = document.getElementById("recipeName").value.trim();
+  const image = document.getElementById("recipeImageURL").value.trim();
+  const ingredients = document.getElementById("recipeIngredientsInput").value.split(",");
+  const instructions = document.getElementById("recipeInstructionsInput").value.trim();
+
+  if (!name || !image || ingredients.length === 0 || !instructions) {
+    alert("Please fill all fields!");
     return;
   }
 
-  filtered.forEach(recipe => {
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.innerHTML = `
-      <img alt="${escapeHtml(recipe.title)}" src="${recipe.image}" />
-      <div class="card-body">
-        <h3>${escapeHtml(recipe.title)}</h3>
-        <p>${escapeHtml(recipe.description)}</p>
-        <div class="meta">
-          ${recipe.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
-        </div>
-        <div class="actions">
-          <button class="btn view-benefits" data-id="${recipe.id}">View Benefits</button>
-          <button class="btn secondary" onclick="copyRecipe(${recipe.id})">Copy Title</button>
-        </div>
-      </div>
-    `;
-    recipesEl.appendChild(card);
-  });
+  const newRecipe = {
+    nameEn: name,
+    nameTa: name, // optional: can add translation later
+    image,
+    ingredientsEn: ingredients,
+    ingredientsTa: ingredients,
+    instructionsEn: instructions,
+    instructionsTa: instructions
+  };
 
-  // attach event listeners for the newly added buttons
-  document.querySelectorAll('.view-benefits').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = Number(e.currentTarget.dataset.id);
-      openBenefits(id);
-    });
-  });
+  if (editIndex !== null) recipes[editIndex] = newRecipe;
+  else recipes.push(newRecipe);
+
+  localStorage.setItem("recipes", JSON.stringify(recipes));
+  displayRecipes();
+  formModal.style.display = "none";
+  clearForm();
+};
+
+// Edit & Delete
+function editRecipe(index) {
+  const r = recipes[index];
+  document.getElementById("recipeName").value = r.nameEn;
+  document.getElementById("recipeImageURL").value = r.image;
+  document.getElementById("recipeIngredientsInput").value = r.ingredientsEn.join(", ");
+  document.getElementById("recipeInstructionsInput").value = r.instructionsEn;
+  editIndex = index;
+  document.getElementById("formTitle").textContent = "Edit Recipe";
+  formModal.style.display = "block";
 }
 
-function openBenefits(id) {
-  const recipe = RECIPES.find(r => r.id === id);
-  if (!recipe) return;
-  modalTitle.textContent = \
-`${recipe.title} — Benefits`;
-  modalList.innerHTML = recipe.benefits.map(b => `<li>${escapeHtml(b)}</li>`).join('');
-  modalEl.setAttribute('aria-hidden', 'false');
-  // move focus to close button for accessibility
-  modalClose.focus();
+function deleteRecipe(index) {
+  if (confirm("Delete this recipe?")) {
+    recipes.splice(index, 1);
+    localStorage.setItem("recipes", JSON.stringify(recipes));
+    displayRecipes();
+  }
 }
 
-function closeModal() {
-  modalEl.setAttribute('aria-hidden', 'true');
+function clearForm() {
+  document.getElementById("recipeName").value = "";
+  document.getElementById("recipeImageURL").value = "";
+  document.getElementById("recipeIngredientsInput").value = "";
+  document.getElementById("recipeInstructionsInput").value = "";
 }
-
-// small helper to copy recipe title (demo action)
-function copyRecipe(id) {
-  const recipe = RECIPES.find(r => r.id === id);
-  if (!recipe) return;
-  navigator.clipboard?.writeText(recipe.title).then(() => {
-    alert(`Copied: ${recipe.title}`);
-  }).catch(() => {
-    alert('Clipboard not available');
-  });
-}
-
-// basic HTML escape for simple content
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-init();
