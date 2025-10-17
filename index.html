@@ -1,46 +1,49 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RecipeVeg — Vegetarian Recipes & Benefits</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veg Recipe Website</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1>RecipeVeg</h1>
-      <p class="subtitle">Vegetarian recipes and their benefits</p>
+  <header>
+    <h1 id="title">🌿 Tamil Nadu Veg Recipes</h1>
+    <div class="top-controls">
+      <input type="text" id="searchInput" placeholder="Search recipes...">
+      <button id="langToggle">தமிழ்</button>
+      <button id="addRecipeBtn">➕ Add Recipe</button>
     </div>
   </header>
 
-  <main class="container">
-    <section class="controls">
-      <input id="search" type="search" placeholder="Search recipes..." aria-label="Search recipes" />
-      <select id="tagFilter" aria-label="Filter by tag">
-        <option value="">All tags</option>
-      </select>
-    </section>
+  <main id="recipeContainer" class="recipe-container"></main>
 
-    <section id="recipes" class="grid" aria-live="polite">
-      <!-- Cards injected by JavaScript -->
-    </section>
-  </main>
-
-  <!-- Benefits modal -->
-  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-content" role="document">
-      <button id="modalClose" class="modal-close" aria-label="Close benefits">&times;</button>
-      <h2 id="modalTitle">Benefits</h2>
-      <ul id="modalList"></ul>
+  <!-- Modal for viewing recipe -->
+  <div id="recipeModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="recipeTitle"></h2>
+      <img id="recipeImage" alt="Recipe Image">
+      <h3 id="ingredientTitle">Ingredients:</h3>
+      <ul id="recipeIngredients"></ul>
+      <h3 id="instructionTitle">Instructions:</h3>
+      <p id="recipeInstructions"></p>
     </div>
   </div>
 
-  <footer class="site-footer container">
-    <small>RecipeVeg — Vegetarian recipes only • Built with HTML/CSS/JS</small>
-  </footer>
+  <!-- Add/Edit Recipe Form -->
+  <div id="formModal" class="modal">
+    <div class="modal-content">
+      <span class="close-form">&times;</span>
+      <h2 id="formTitle">Add Recipe</h2>
+      <input type="text" id="recipeName" placeholder="Recipe Name">
+      <input type="text" id="recipeImageURL" placeholder="Image URL">
+      <textarea id="recipeIngredientsInput" placeholder="Ingredients (comma separated)"></textarea>
+      <textarea id="recipeInstructionsInput" placeholder="Instructions"></textarea>
+      <button id="saveRecipeBtn">Save</button>
+    </div>
+  </div>
 
-  <script src="scripts.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
